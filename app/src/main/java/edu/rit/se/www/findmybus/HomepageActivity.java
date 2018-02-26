@@ -22,5 +22,14 @@ public class HomepageActivity extends AppCompatActivity {
                 startActivity(changetoAdd);
             }
         });
+
+        Button trackbus = (Button) findViewById(R.id.trackbuses);
+        trackbus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent changetoAdd = new Intent(HomepageActivity.this, TrackedBusesActivity.class);
+                startActivity(changetoAdd);
+            }
+        });
     }
 }
