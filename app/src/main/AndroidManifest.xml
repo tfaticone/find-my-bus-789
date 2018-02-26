@@ -28,6 +28,8 @@
             android:name=".CurrentBusInfoActivity"
             android:label="@string/title_activity_current_bus_info"
             android:theme="@style/AppTheme.NoActionBar"></activity>
+        <provider android:name="RouteProvider"
+            android:authorities="edu.rit.se.www.findmybus.RouteProvider"/>
     </application>
 
 </manifest>
