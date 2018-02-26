@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Find My Bus</string>
+    <string name="title_activity_add_bus">AddBusActivity</string>
+    <string name="title_activity_tracked_buses">TrackedBusesActivity</string>
+    <string name="title_activity_current_bus_info">CurrentBusInfoActivity</string>
+</resources>
