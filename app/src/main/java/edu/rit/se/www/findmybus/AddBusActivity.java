@@ -3,12 +3,16 @@ package edu.rit.se.www.findmybus;
 import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Bundle;
+import android.speech.tts.UtteranceProgressListener;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.speech.tts.TextToSpeech;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import org.w3c.dom.Text;
 import android.util.Log;
@@ -19,6 +23,9 @@ import android.widget.Button;
 import android.widget.EditText;
 
 public class AddBusActivity extends AppCompatActivity {
+    TextToSpeech talker;
+    private final int REQ_CODE_SPEECH_INPUT = 100;
+    private static final int SPEECH_REQUEST_CODE = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +33,17 @@ public class AddBusActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_bus);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    talker.setLanguage(Locale.UK);
+                    startVoiceWalkthrough(talker);
+
+                }
+            }
+        });
 
         Button addBusSubmit = (Button)findViewById(R.id.addBusSubmit);
         final EditText addBusInput   = (EditText)findViewById(R.id.addBusInput);
@@ -37,9 +55,6 @@ public class AddBusActivity extends AppCompatActivity {
                     {
                         Integer routeID = Integer.parseInt(addBusInput.getText().toString());
                         addRoute(routeID);
-
-                        Intent changetoTrack = new Intent(AddBusActivity.this, TrackedBusesActivity.class);
-                        startActivity(changetoTrack);
                     }
                 });
 
@@ -50,6 +65,54 @@ public class AddBusActivity extends AppCompatActivity {
         values.put("routeID", routeID);
         Log.e("New Value entered", Integer.toString(routeID));
         Uri uri = getContentResolver().insert(RouteProvider.CONTENT_URI, values);
+
+        Intent changetoTrack = new Intent(AddBusActivity.this, TrackedBusesActivity.class);
+        startActivity(changetoTrack);
+    }
+
+    private void startVoiceWalkthrough(TextToSpeech talker) {
+        talker.speak("Initiating Add Bus Walkthrough. What is the route ID you want to add?", TextToSpeech.QUEUE_FLUSH, null);
+
+        while(!talker.isSpeaking()){}
+        while(talker.isSpeaking()){}
+        promptSpeechInput();
+    }
+
+    /**
+     * Showing google speech input dialog
+     * */
+    private void promptSpeechInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+// Start the activity, the intent will be populated with the speech text
+        startActivityForResult(intent, SPEECH_REQUEST_CODE);
+    }
+
+    /**
+     * Receiving speech input
+     * */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(
+                    RecognizerIntent.EXTRA_RESULTS);
+            String spokenText = results.get(0);
+            try{
+                Integer voicedrouteID = Integer.parseInt(spokenText);
+                addRoute(voicedrouteID);
+            } catch(NumberFormatException c) {
+                Log.e("INTEGER ERROR", "VOICED INTEGER INCORRECT");
+                talker.speak("Could not recognize number", TextToSpeech.QUEUE_FLUSH, null);
+                while(!talker.isSpeaking()){}
+                while(talker.isSpeaking()){}
+                Intent intent = getIntent();
+                finish();
+                startActivity(intent);
+
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
 }
