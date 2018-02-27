@@ -46,7 +46,7 @@ public class RouteProvider extends ContentProvider {
     private SQLiteDatabase db;
     static final String DATABASE_NAME = "Routes";
     static final String ROUTES_TABLE_NAME = "routes";
-    static final int DATABASE_VERSION = 1;
+    static final int DATABASE_VERSION = 2;
     static final String CREATE_DB_TABLE =
             " CREATE TABLE " + ROUTES_TABLE_NAME +
                     " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -94,6 +94,7 @@ public class RouteProvider extends ContentProvider {
          * Add a new student record
          */
         long rowID = db.insert(	ROUTES_TABLE_NAME, "", values);
+        Log.e("new Row", Long.toString(rowID));
 
         /**
          * If record is added successfully
@@ -138,6 +139,7 @@ public class RouteProvider extends ContentProvider {
          * register to watch a content URI for changes
          */
         c.setNotificationUri(getContext().getContentResolver(), uri);
+
         return c;
     }
 

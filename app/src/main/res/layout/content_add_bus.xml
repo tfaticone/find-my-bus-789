@@ -30,23 +30,23 @@ tools:showIn="@layout/activity_add_bus">
             android:textSize="30sp" />
 
         <EditText
-            android:id="@+id/editText"
+            android:id="@+id/addBusInput"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:ems="10"
+            android:hint="Route"
             android:inputType="number"
-            android:text="Route"
             android:textSize="36sp" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/button3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Submit"
-        android:textSize="36sp" />
+        <Button
+            android:id="@+id/addBusSubmit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Submit"
+            android:textSize="36sp" />
 
 </LinearLayout>
 </android.support.constraint.ConstraintLayout>
