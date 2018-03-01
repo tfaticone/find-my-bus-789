@@ -1,6 +1,8 @@
 package edu.rit.se.www.findmybus;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.tts.UtteranceProgressListener;
@@ -34,13 +36,17 @@ public class AddBusActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        Log.e("VOICE BOOLEAN", Boolean.toString(getVoicePreference()));
+
         talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
                     talker.setLanguage(Locale.UK);
-                    startVoiceWalkthrough(talker);
 
+                    if(getVoicePreference()) {
+                        startVoiceWalkthrough(talker);
+                    }
                 }
             }
         });
@@ -102,7 +108,6 @@ public class AddBusActivity extends AppCompatActivity {
                 Integer voicedrouteID = Integer.parseInt(spokenText);
                 addRoute(voicedrouteID);
             } catch(NumberFormatException c) {
-                Log.e("INTEGER ERROR", "VOICED INTEGER INCORRECT");
                 talker.speak("Could not recognize number", TextToSpeech.QUEUE_FLUSH, null);
                 while(!talker.isSpeaking()){}
                 while(talker.isSpeaking()){}
@@ -113,6 +118,12 @@ public class AddBusActivity extends AppCompatActivity {
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private boolean getVoicePreference() {
+        SharedPreferences sharedPref = getSharedPreferences("default_voice_assistance", Context.MODE_PRIVATE);
+        String vAssistantBoolean = sharedPref.getString("default_voice_assistance", "false");
+        return Boolean.parseBoolean(vAssistantBoolean);
     }
 
 }

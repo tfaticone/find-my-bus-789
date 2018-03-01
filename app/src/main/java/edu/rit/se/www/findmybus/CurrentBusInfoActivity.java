@@ -1,7 +1,9 @@
 package edu.rit.se.www.findmybus;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,10 +17,16 @@ import android.widget.TextView;
 import android.speech.tts.TextToSpeech;
 import java.util.Locale;
 import java.net.URI;
+import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class CurrentBusInfoActivity extends AppCompatActivity {
     TextToSpeech talker;
     Integer routeID = null;
+    private int distance = 0;
+    private int heading = 0;
+    Timer timer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,10 +36,11 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
                     talker.setLanguage(Locale.UK);
-                    talker.speak("The route being tracked is route" + Integer.toString(routeID), TextToSpeech.QUEUE_FLUSH, null);
+                    startTimedUpdates();
                 }
             }
         });
+
         setContentView(R.layout.activity_current_bus_info);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -39,8 +48,6 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         final Bundle bundle = getIntent().getExtras();
 
         if(bundle.getString("routeID")!=null) {
-            Log.e("Bundle ID", bundle.getString("routeID"));
-
             TextView routeIDText = (TextView) findViewById(R.id.routeID);
             routeID = Integer.parseInt(bundle.getString("routeID"));
             routeIDText.setText(bundle.getString("routeID"));
@@ -54,12 +61,74 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                 String[] selection = new String[1];
                 selection[0] = bundle.getString("routeID");
                 Integer rowCount = getContentResolver().delete(RouteProvider.CONTENT_URI, "routeID = ?", selection);
-                Log.e("Deleted Rows", Integer.toString(rowCount));
-
                 Intent changetoAdd = new Intent(CurrentBusInfoActivity.this, TrackedBusesActivity.class);
                 startActivity(changetoAdd);
             }
         });
 
+    }
+
+    protected void onStart() {
+        super.onStart();
+        getValues();
+        updateDisplayValues();
+    }
+
+    protected void onPause(){
+        super.onPause();
+        timer.cancel();
+    }
+
+    protected void onResume(){
+        super.onResume();
+        startTimedUpdates();
+    }
+
+    private void getValues() {
+        Random r = new Random();
+        distance = r.nextInt((10) + 1);
+
+        heading = r.nextInt(360 + 1);
+    }
+
+    private void updateDisplayValues(){
+        final TextView busDistanceLabel = (TextView) findViewById(R.id.busDistance);
+        final TextView busHeadingLabel = (TextView) findViewById(R.id.busHeading);
+
+        CurrentBusInfoActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                busDistanceLabel.setText(Integer.toString(distance) + " miles");
+                busHeadingLabel.setText(Integer.toString(heading) + " degrees");
+                if(getVoicePreference()){
+                    voiceUpdates();
+                }
+            }
+        });
+    }
+
+    private void voiceUpdates() {
+        talker.speak("Bus" + Integer.toString(routeID) + " is " + Integer.toString(distance)
+                + " miles away. It has a heading of " + Integer.toString(heading) + " degrees.", TextToSpeech.QUEUE_FLUSH, null);
+    }
+
+    private void startTimedUpdates(){
+        timer = new Timer();
+        TimerTask updateData = new TimerTask() {
+            @Override
+            public void run() {
+                getValues();
+                updateDisplayValues();
+
+            }
+        };
+
+        timer.schedule(updateData, 20000, 20000);
+    }
+
+    private boolean getVoicePreference() {
+        SharedPreferences sharedPref = getSharedPreferences("default_voice_assistance", Context.MODE_PRIVATE);
+        String vAssistantBoolean = sharedPref.getString("default_voice_assistance", "false");
+        return Boolean.parseBoolean(vAssistantBoolean);
     }
 }
