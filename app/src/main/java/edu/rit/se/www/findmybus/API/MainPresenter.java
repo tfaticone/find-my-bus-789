@@ -1,4 +1,4 @@
-package edu.rit.se.www.findmybus;
+package edu.rit.se.www.findmybus.API;
 
 /**
  * Created by Alex on 2/28/2018.

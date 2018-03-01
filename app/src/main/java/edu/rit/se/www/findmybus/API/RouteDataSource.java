@@ -1,4 +1,4 @@
-package edu.rit.se.www.findmybus;
+package edu.rit.se.www.findmybus.API;
 
 
 import retrofit2.http.GET;
@@ -10,7 +10,10 @@ import rx.Observable;
 
 public interface RouteDataSource {
 
-    @GET("route/")
+    @GET("RTRoutes/")
     Observable<RouteResponseModel> getRoutes();
+
+    @GET("RTRouteStops")
+    Observable<RouteStopResponseModel> getRouteStops();
 
 }

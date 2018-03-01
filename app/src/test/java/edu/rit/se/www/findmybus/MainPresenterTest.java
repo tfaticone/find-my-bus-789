@@ -8,9 +8,19 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 
+import java.util.ArrayList;
+
+import edu.rit.se.www.findmybus.API.MainContract;
+import edu.rit.se.www.findmybus.API.MainPresenter;
+import edu.rit.se.www.findmybus.API.RouteDataSource;
+import edu.rit.se.www.findmybus.API.RouteModel;
+import edu.rit.se.www.findmybus.API.RouteResponseModel;
+import edu.rit.se.www.findmybus.API.RouteStopModel;
+import edu.rit.se.www.findmybus.API.RouteStopResponseModel;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
+import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -39,6 +49,7 @@ public class MainPresenterTest {
             this.view
     );
 
+    @Test
     public void fetchValidDataShouldLoadIntoView() {
 
         RouteResponseModel routeResponseModel = new RouteResponseModel(0, null, null, null);
@@ -83,5 +94,66 @@ public class MainPresenterTest {
         inOrder.verify(view, times(1)).onFetchDataStarted();
         inOrder.verify(view, times(1)).onFetchDataError();
         verify(view, never()).onFetchDataCompleted();
+    }
+
+    @Test
+    public void validateGetRoutes() {
+        RouteModel data = new RouteModel("1", "1 - Lake / Park", "1", "Lake / Park");
+        ArrayList<RouteModel> results = new ArrayList<>();
+        results.add(data);
+
+        RouteResponseModel routeResponseModel = new RouteResponseModel(0, null, null, results);
+
+        when(routeDataSource.getRoutes())
+                .thenReturn(Observable.just(routeResponseModel));
+
+        assertEquals(0, routeResponseModel.count);
+        assertEquals("1", routeResponseModel.results.get(0).routeId);
+        assertEquals("1 - Lake / Park", routeResponseModel.results.get(0).routeName);
+        assertEquals("1", routeResponseModel.results.get(0).routeNum);
+        assertEquals("Lake / Park", routeResponseModel.results.get(0).routeText);
+    }
+
+    @Test
+    public void validateGetRouteStops() {
+        RouteStopModel data = new RouteStopModel("93", "Beach & 411 Beach", "43.262171", "-77.614512");
+        ArrayList<RouteStopModel> results = new ArrayList<>();
+        results.add(data);
+
+        RouteStopResponseModel routeStopResponseModel = new RouteStopResponseModel(1, null, null, results);
+
+        when(routeDataSource.getRouteStops())
+                .thenReturn(Observable.just(routeStopResponseModel));
+
+        assertEquals(1, routeStopResponseModel.count);
+        assertEquals("93", routeStopResponseModel.results.get(0).stopId);
+        assertEquals("Beach & 411 Beach", routeStopResponseModel.results.get(0).stopName);
+        assertEquals("43.262171", routeStopResponseModel.results.get(0).lat);
+        assertEquals("-77.614512", routeStopResponseModel.results.get(0).lon);
+    }
+
+    @Test
+    public void validateMultipleGetRouteStops() {
+        RouteStopModel stop1 = new RouteStopModel("93", "Beach & 411 Beach", "43.262171", "-77.614512");
+        RouteStopModel stop2 = new RouteStopModel("94", "Beach & 412 Beach", "44.262171", "-76.614512");
+
+        ArrayList<RouteStopModel> results = new ArrayList<>();
+        results.add(stop1);
+        results.add(stop2);
+
+        RouteStopResponseModel routeStopResponseModel = new RouteStopResponseModel(2, null, null, results);
+
+        when(routeDataSource.getRouteStops())
+                .thenReturn(Observable.just(routeStopResponseModel));
+
+        assertEquals(2, routeStopResponseModel.count);
+        assertEquals("93", routeStopResponseModel.results.get(0).stopId);
+        assertEquals("Beach & 411 Beach", routeStopResponseModel.results.get(0).stopName);
+        assertEquals("43.262171", routeStopResponseModel.results.get(0).lat);
+        assertEquals("-77.614512", routeStopResponseModel.results.get(0).lon);
+        assertEquals("94", routeStopResponseModel.results.get(1).stopId);
+        assertEquals("Beach & 412 Beach", routeStopResponseModel.results.get(1).stopName);
+        assertEquals("44.262171", routeStopResponseModel.results.get(1).lat);
+        assertEquals("-76.614512", routeStopResponseModel.results.get(1).lon);
     }
 }

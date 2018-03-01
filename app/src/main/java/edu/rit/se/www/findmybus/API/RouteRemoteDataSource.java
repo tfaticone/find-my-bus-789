@@ -1,4 +1,4 @@
-package edu.rit.se.www.findmybus;
+package edu.rit.se.www.findmybus.API;
 
 
 import rx.Observable;
@@ -8,11 +8,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Created by Alex on 2/28/2018.
+ *
  */
 
 public class RouteRemoteDataSource implements RouteDataSource {
         private RouteDataSource api;
-        private final String URL = ""; //api URL
+        private final String URL = "http://api.rgrta.com/"; //api URL
 
         public RouteRemoteDataSource() {
             Retrofit retrofit = new Retrofit.Builder()
@@ -27,5 +28,10 @@ public class RouteRemoteDataSource implements RouteDataSource {
         @Override
         public Observable<RouteResponseModel> getRoutes() {
             return this.api.getRoutes();
+        }
+
+        @Override
+        public Observable<RouteStopResponseModel> getRouteStops() {
+            return this.api.getRouteStops();
         }
 }
