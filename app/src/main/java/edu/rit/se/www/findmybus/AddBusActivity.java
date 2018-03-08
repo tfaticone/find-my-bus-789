@@ -36,6 +36,15 @@ public class AddBusActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(getApplicationContext(),HomepageActivity.class));
+            }
+        });
+
         Log.e("VOICE BOOLEAN", Boolean.toString(getVoicePreference()));
 
         talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
@@ -60,6 +69,7 @@ public class AddBusActivity extends AppCompatActivity {
                     public void onClick(View view)
                     {
                         Integer routeID = Integer.parseInt(addBusInput.getText().toString());
+                        //CHECK TO SEE ITS NOT EMPTY
                         addRoute(routeID);
                     }
                 });
