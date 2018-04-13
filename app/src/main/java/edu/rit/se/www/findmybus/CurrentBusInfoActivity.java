@@ -44,17 +44,9 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         });
 
         setContentView(R.layout.activity_current_bus_info);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(getApplicationContext(),TrackedBusesActivity.class));
-            }
-        });
 
         final Bundle bundle = getIntent().getExtras();
 
@@ -64,29 +56,6 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             routeIDText.setText(bundle.getString("routeID"));
         }
 
-        Button removeButton = (Button) findViewById(R.id.removeRoute);
-        removeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ContentValues values = new ContentValues();
-                String[] selection = new String[1];
-                selection[0] = bundle.getString("routeID");
-                Integer rowCount = getContentResolver().delete(RouteProvider.CONTENT_URI, "routeID = ?", selection);
-                Intent changetoAdd = new Intent(CurrentBusInfoActivity.this, TrackedBusesActivity.class);
-                startActivity(changetoAdd);
-            }
-        });
-
-    }
-
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            // Respond to the action bar's Up/Home button
-            case android.R.id.home:
-                NavUtils.navigateUpFromSameTask(this);
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     protected void onStart() {
@@ -149,5 +118,16 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         SharedPreferences sharedPref = getSharedPreferences("default_voice_assistance", Context.MODE_PRIVATE);
         String vAssistantBoolean = sharedPref.getString("default_voice_assistance", "false");
         return Boolean.parseBoolean(vAssistantBoolean);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

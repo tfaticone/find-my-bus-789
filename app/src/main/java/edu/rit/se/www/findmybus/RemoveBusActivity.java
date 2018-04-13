@@ -1,42 +1,35 @@
 package edu.rit.se.www.findmybus;
 
-import android.app.LauncherActivity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.net.Uri;
-import android.database.Cursor;
-import android.content.ContentValues;
-import android.content.CursorLoader;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Locale;
 
-public class TrackedBusesActivity extends AppCompatActivity {
+public class RemoveBusActivity extends AppCompatActivity {
     TextToSpeech talker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_tracked_buses);
+        setContentView(R.layout.activity_remove_bus);
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         if (toolbar != null) {
             setSupportActionBar(toolbar);
@@ -50,6 +43,19 @@ public class TrackedBusesActivity extends AppCompatActivity {
         for(int i = 0; i < routeNumber_string.size(); i++) {
             routeNumber_string.set(i, "Route " + routeNumber_string.get(i));
         }
+
+        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    talker.setLanguage(Locale.UK);
+
+                    if(getVoicePreference()) {
+                        talker.speak("Remove Bus Page. Please select a bus from the list.", TextToSpeech.QUEUE_FLUSH, null);
+                    }
+                }
+            }
+        });
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, routeNumber_string){
             @Override
@@ -71,26 +77,15 @@ public class TrackedBusesActivity extends AppCompatActivity {
 
         busList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
-                Intent i = new Intent(TrackedBusesActivity.this, CurrentBusInfoActivity.class);
                 //If you wanna send any data to nextActicity.class you can use
-                i.putExtra("routeID", routeNumbers.get(position));
-                startActivity(i);
+                ContentValues values = new ContentValues();
+                String[] selection = new String[1];
+                selection[0] = routeNumbers.get(position);
+                Integer rowCount = getContentResolver().delete(RouteProvider.CONTENT_URI, "routeID = ?", selection);
+                Intent changetoAdd = new Intent(RemoveBusActivity.this, TrackedBusesActivity.class);
+                startActivity(changetoAdd);
             }
         });
-
-        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
-
-                    if(getVoicePreference()) {
-                        talker.speak("Tracked Bus Page. Please select a bus from the list to get more details.", TextToSpeech.QUEUE_FLUSH, null);
-                    }
-                }
-            }
-        });
-
 
     }
 

@@ -12,10 +12,10 @@
         android:orientation="vertical">
 
         <Button
-            android:id="@+id/addbus"
+            android:id="@+id/managebus"
             android:layout_width="match_parent"
             android:layout_height="160dp"
-            android:text="Add a Bus"
+            android:text="Manage Bus List"
             android:textSize="36sp" />
 
         <Button

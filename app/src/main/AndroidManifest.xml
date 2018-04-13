@@ -19,15 +19,55 @@
         <activity
             android:name=".AddBusActivity"
             android:label="@string/title_activity_add_bus"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName="edu.rit.se.www.findmybus.ManageBusList" >
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.rit.se.www.findmybus.ManageBusList" />
+        </activity>
+        <activity
+            android:name=".ManageBusList"
+            android:label="@string/title_activity_manage_bus_list"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName="edu.rit.se.www.findmybus.HomepageActivity" >
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.rit.se.www.findmybus.HomepageActivity" />
+        </activity>
+        <activity
+            android:name=".RemoveBusActivity"
+            android:label="@string/title_activity_remove_bus"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName="edu.rit.se.www.findmybus.ManageBusList" >
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.rit.se.www.findmybus.ManageBusList" />
+        </activity>
         <activity
             android:name=".TrackedBusesActivity"
             android:label="@string/title_activity_tracked_buses"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName="edu.rit.se.www.findmybus.HomepageActivity" >
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.rit.se.www.findmybus.HomepageActivity"
+            />
+        </activity>
         <activity
             android:name=".CurrentBusInfoActivity"
             android:label="@string/title_activity_current_bus_info"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar">
+            android:parentActivityName="edu.rit.se.www.findmybus.HomepageActivity" >
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.rit.se.www.findmybus.TrackedBusesActivity"
+                />
+        </activity>
         <provider android:name="RouteProvider"
             android:authorities="edu.rit.se.www.findmybus.RouteProvider"/>
     </application>

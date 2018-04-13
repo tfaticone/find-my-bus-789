@@ -3,5 +3,7 @@
     <string name="title_activity_add_bus">Add Bus</string>
     <string name="title_activity_tracked_buses">Tracked Buses</string>
     <string name="title_activity_current_bus_info">Tracking Current Bus</string>
+    <string name="title_activity_manage_bus_list">Manage Bus List</string>
+    <string name="title_activity_remove_bus">Remove Bus</string>
     <string name="default_voice_assistance">False</string>
 </resources>

@@ -2,6 +2,7 @@ package edu.rit.se.www.findmybus;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -10,20 +11,26 @@ import android.widget.Button;
 import android.content.Intent;
 import 	android.app.Fragment;
 
+import org.w3c.dom.Text;
+
+import java.util.Locale;
+
 
 public class HomepageActivity extends AppCompatActivity {
+    TextToSpeech talker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        Button addbus = (Button) findViewById(R.id.addbus);
+        Button addbus = (Button) findViewById(R.id.managebus);
         addbus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent changetoAdd = new Intent(HomepageActivity.this, AddBusActivity.class);
+                Intent changetoAdd = new Intent(HomepageActivity.this, ManageBusList.class);
                 startActivity(changetoAdd);
+
             }
         });
 
@@ -42,6 +49,19 @@ public class HomepageActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 toggleVoicePreference();
+            }
+        });
+
+        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    talker.setLanguage(Locale.UK);
+
+                    if(getVoicePreference()) {
+                        talker.speak("Homepage", TextToSpeech.QUEUE_FLUSH, null);
+                    }
+                }
             }
         });
     }
