@@ -47,7 +47,7 @@ public class AddBusActivity extends AppCompatActivity {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
+                    talker.setLanguage(Locale.US);
 
                     if(getVoicePreference()) {
                         startVoiceWalkthrough(talker);

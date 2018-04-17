@@ -48,7 +48,7 @@ public class RemoveBusActivity extends AppCompatActivity {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
+                    talker.setLanguage(Locale.US);
 
                     if(getVoicePreference()) {
                         talker.speak("Remove Bus Page. Please select a bus from the list.", TextToSpeech.QUEUE_FLUSH, null);

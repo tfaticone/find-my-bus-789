@@ -39,7 +39,7 @@ public class ManageBusList extends AppCompatActivity {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
+                    talker.setLanguage(Locale.US);
 
                     if(getVoicePreference()) {
                         talker.speak("Manage Bus List", TextToSpeech.QUEUE_FLUSH, null);

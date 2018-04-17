@@ -48,7 +48,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
+                    talker.setLanguage(Locale.US);
                     startTimedUpdates();
                 }
             }
@@ -137,7 +137,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             public void run() {
                 busDistanceLabel.setText(Float.toString(distance) + " miles");
                 busHeadingLabel.setText(Float.toString(heading) + " degrees");
-                if(distance < 0.0189394) { //Rougly 100 feet in miles
+                if(0.00094697 < distance && distance < 0.0189394) { //Rougly between 5 and 100 feet ( in miles )
                     startVibrationTimer(distance, heading);
                 } else {
                     stopVibrationTimer();
