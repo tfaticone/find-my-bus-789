@@ -57,6 +57,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
     String nextStopID = null;
     String stopDescription = null;
     String eta = null;
+    Location vehicle = null;
     String routeName = null;
     Timer vibTimer = null;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -100,24 +101,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             routeNameText = (TextView) findViewById(R.id.routeName);
         }
 
-        requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
-        getRouteList(routeID, 1);
-        getRouteList(routeID, 2);
-        getRouteList(routeID, 3);
-        try {
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
-                        @Override
-                        public void onSuccess(Location location) {
-                            // Got last known location. In some rare situations this can be null.
-                            if (location != null) {
-                                savedLocation = location;
-                            }
-                        }
-                    });
-        } catch (SecurityException se) {
 
-        }
 
         Button setLocationBtn = (Button) findViewById(R.id.currentLocation);
         setLocationBtn.setOnClickListener(new View.OnClickListener() {
@@ -130,7 +114,11 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
 
     protected void onStart() {
         super.onStart();
-        updateDisplayValues();
+        requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
+        getRouteList(routeID, 1);
+        getRouteList(routeID, 2);
+        getRouteList(routeID, 3);
+        getRouteList(routeID, 4);
     }
 
     protected void onPause(){
@@ -146,22 +134,32 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
     private void updateDisplayValues(){
         final TextView busDistanceLabel = (TextView) findViewById(R.id.busDistance);
         final TextView busHeadingLabel = (TextView) findViewById(R.id.busHeading);
-
         try {
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                         @Override
                         public void onSuccess(Location location) {
+                            Log.e("Display", "OnSuccess");
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                distance = (float)(((double)location.distanceTo(savedLocation)) * 0.000621371);
-                                heading = location.bearingTo(savedLocation);
+                                Log.e("Display", "Not Null");
+                                if(savedLocation != null){
+                                    Log.e("vehicleLocation", "THERE IS A SAVEDLOCATION");
+                                    distance = (float)(((double)location.distanceTo(savedLocation)) * 0.000621371);
+                                    heading = location.bearingTo(savedLocation);
+                                } else {
+                                    distance = (float)(((double)location.distanceTo(vehicle)) * 0.000621371);
+                                    heading = location.bearingTo(vehicle);
+                                    Log.e("DISTANCE",Float.toString(distance));
+                                }
                             }
                         }
                     });
         } catch (SecurityException se) {
+            Log.e("Display", "Security Exception");
 
         }
+
 
         CurrentBusInfoActivity.this.runOnUiThread(new Runnable() {
             @Override
@@ -216,7 +214,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         vibTimer = new Timer();
 
         Float time = (float)((10 * (distance * 0.000189394)) + 2);
-        Float strength = (float)((-.009 * (distance * 0.000189394)) + 1);
+        Float strength = (float)((-.009 * (bearing * 0.000189394)) + 1);
         final VibrationEffect effect = VibrationEffect.createOneShot(Math.round(time), Math.round(strength * VibrationEffect.DEFAULT_AMPLITUDE));
 
         TimerTask vibrateTask = new TimerTask() {
@@ -236,7 +234,10 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         TimerTask updateData = new TimerTask() {
             @Override
             public void run() {
-                updateDisplayValues();
+                getRouteList(routeID, 1);
+                getRouteList(routeID, 2);
+                getRouteList(routeID, 3);
+                getRouteList(routeID, 4);
             }
         };
 
@@ -273,6 +274,9 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         if(urlConfig == 3){
             url = "http://api.rgrta.com/rtpredictions?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber + "&stopid=" + nextStopID;
          }
+        if(urlConfig == 4){
+            url = "http://api.rgrta.com/rtvehicles?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+        }
         // Next, we create a new JsonArrayRequest. This will use Volley to make a HTTP request
         // that expects a JSON Array Response.
         // To fully understand this, I'd recommend readng the office docs: https://developer.android.com/training/volley/index.html
@@ -289,22 +293,26 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                                         // For each response, add a new line to our route list.
                                         JSONObject jsonObj = response.getJSONObject(i);
                                         routeName = jsonObj.get("RouteName").toString();
-                                        Log.e("API", routeName);
                                     }
                                     if (urlConfig == 2){
                                         // For each response, add a new line to our route list.
                                         JSONObject jsonObj = response.getJSONObject(0);
                                         nextStopID = jsonObj.get("StopID").toString();
                                         stopDescription = jsonObj.get("StopName").toString();
-                                        Log.e("API", nextStopID);
-                                        Log.e("API", stopDescription);
                                     }
                                     if (urlConfig == 3){
                                         // For each response, add a new line to our route list.
                                         JSONObject jsonObj = response.getJSONObject(i);
                                         eta = jsonObj.get("ETA").toString();
-                                        Log.e("test","in eta");
-                                        Log.e("API ETA", eta);
+                                    }
+                                    if (urlConfig == 4){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(i);
+                                        Location vehicleLocation = new Location("");
+                                        vehicleLocation.setLatitude(Double.parseDouble(jsonObj.get("CurrentLat").toString()));
+                                        vehicleLocation.setLongitude(Double.parseDouble(jsonObj.get("CurrentLon").toString()));
+                                        vehicleLocation.setBearing(Float.parseFloat(jsonObj.get("Heading").toString()));
+                                        vehicle = vehicleLocation;
                                     }
                                 } catch (JSONException e) {
                                     // If there is an error then output this to the logs.
@@ -312,13 +320,16 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                                 }
                             }
 
-
+                            if(urlConfig == 4) {
+                                Log.e("UPDATE", "Displaying new vals");
+                                updateDisplayValues();
+                            }
                             String currentText = routeNameText.getText().toString();
-                            routeNameText.setText(currentText + "\n\n" + routeName);
+                            routeNameText.setText(routeName);
                             currentText = routeListText.getText().toString();
-                            routeListText.setText(currentText + "\n\n" + stopDescription);
+                            routeListText.setText(stopDescription);
                             currentText = etaText.getText().toString();
-                            etaText.setText(currentText + "\n\n" + eta);
+                            etaText.setText(eta);
                         } else {
                             // There are no buses found on this route
                             Log.e("Volley","No buses found on this route.");
