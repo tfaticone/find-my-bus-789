@@ -19,6 +19,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.speech.tts.TextToSpeech;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Locale;
 import java.net.URI;
 import java.util.Random;
@@ -30,12 +42,22 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import edu.rit.se.www.findmybus.API.RouteConnection;
+
 public class CurrentBusInfoActivity extends AppCompatActivity {
     TextToSpeech talker;
     Integer routeID = null;
     private float distance = 0;
     private float heading = 0;
     Timer timer;
+    TextView routeListText = null;
+    TextView etaText = null;
+    TextView routeNameText = null;
+    RequestQueue requestQueue;
+    String nextStopID = null;
+    String stopDescription = null;
+    String eta = null;
+    String routeName = null;
     Timer vibTimer = null;
     private FusedLocationProviderClient mFusedLocationClient;
     private static Location savedLocation = null;
@@ -58,6 +80,9 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_current_bus_info);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setDisplayShowHomeEnabled(true);
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         if (toolbar != null) {
             setSupportActionBar(toolbar);
@@ -70,8 +95,15 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             TextView routeIDText = (TextView) findViewById(R.id.routeID);
             routeID = Integer.parseInt(bundle.getString("routeID"));
             routeIDText.setText(bundle.getString("routeID"));
+            routeListText = (TextView) findViewById(R.id.routeList);
+            etaText = (TextView) findViewById(R.id.eta);
+            routeNameText = (TextView) findViewById(R.id.routeName);
         }
 
+        requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
+        getRouteList(routeID, 1);
+        getRouteList(routeID, 2);
+        getRouteList(routeID, 3);
         try {
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -94,7 +126,6 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                 saveCurrentLocation();
             }
         });
-
     }
 
     protected void onStart() {
@@ -227,5 +258,85 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void getRouteList(Integer routeNumber, final Integer urlConfig) {
+        // First, we insert the username into the repo url.
+        // The repo url is defined in GitHubs API docs (https://developer.github.com/v3/repos/).
+        String url = null;
+        if(urlConfig == 1) {
+            url = "http://api.rgrta.com/rtroutes?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+        }
+        if(urlConfig == 2){
+            url = "http://api.rgrta.com/rtrouteStops?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+        }
+        if(urlConfig == 3){
+            url = "http://api.rgrta.com/rtpredictions?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber + "&stopid=" + nextStopID;
+         }
+        // Next, we create a new JsonArrayRequest. This will use Volley to make a HTTP request
+        // that expects a JSON Array Response.
+        // To fully understand this, I'd recommend readng the office docs: https://developer.android.com/training/volley/index.html
+        JsonArrayRequest arrReq = new JsonArrayRequest(Request.Method.GET, url,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        // Check the length of our response
+                        if (response.length() > 0) {
+                            // We did get a response
+                            for (int i = 0; i < response.length(); i++) {
+                                try {
+                                    if (urlConfig == 1){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(i);
+                                        routeName = jsonObj.get("RouteName").toString();
+                                        Log.e("API", routeName);
+                                    }
+                                    if (urlConfig == 2){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(0);
+                                        nextStopID = jsonObj.get("StopID").toString();
+                                        stopDescription = jsonObj.get("StopName").toString();
+                                        Log.e("API", nextStopID);
+                                        Log.e("API", stopDescription);
+                                    }
+                                    if (urlConfig == 3){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(i);
+                                        eta = jsonObj.get("ETA").toString();
+                                        Log.e("test","in eta");
+                                        Log.e("API ETA", eta);
+                                    }
+                                } catch (JSONException e) {
+                                    // If there is an error then output this to the logs.
+                                    Log.e("Volley", "Invalid JSON Object.");
+                                }
+                            }
+
+
+                            String currentText = routeNameText.getText().toString();
+                            routeNameText.setText(currentText + "\n\n" + routeName);
+                            currentText = routeListText.getText().toString();
+                            routeListText.setText(currentText + "\n\n" + stopDescription);
+                            currentText = etaText.getText().toString();
+                            etaText.setText(currentText + "\n\n" + eta);
+                        } else {
+                            // There are no buses found on this route
+                            Log.e("Volley","No buses found on this route.");
+                        }
+                    }
+                },
+
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // If there a HTTP error then add a note to our route list.
+                        Log.e("Volley", "Unfortunately, we have encountered an error. ");
+                        Log.e("Volley", error.toString());
+                    }
+                }
+        );
+        // Add the request we just defined to our request queue.
+        // The request queue will automatically handle the request as soon as it can.
+        requestQueue.add(arrReq);
     }
 }
