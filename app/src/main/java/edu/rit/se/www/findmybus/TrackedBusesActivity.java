@@ -82,7 +82,7 @@ public class TrackedBusesActivity extends AppCompatActivity {
             @Override
             public void onInit(int status) {
                 if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.UK);
+                    talker.setLanguage(Locale.US);
 
                     if(getVoicePreference()) {
                         talker.speak("Tracked Bus Page. Please select a bus from the list to get more details.", TextToSpeech.QUEUE_FLUSH, null);
