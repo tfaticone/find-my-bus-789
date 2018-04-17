@@ -113,7 +113,7 @@ public class RouteConnection extends AppCompatActivity{
         this.routeList.setText(str);
     }
 
-    private void getRouteList(String routeNumber) {
+    public void getRouteList(Integer routeNumber) {
         // First, we insert the username into the repo url.
         // The repo url is defined in GitHubs API docs (https://developer.github.com/v3/repos/).
         this.url = this.baseUrl + "&routeid=" + routeNumber;
@@ -168,6 +168,5 @@ public class RouteConnection extends AppCompatActivity{
         clearRouteList();
         // Call our getRepoList() function that is defined above and pass in the
         // text which has been entered into the etGitHubUser text input field.
-        getRouteList(routeId.getText().toString());
     }
 }

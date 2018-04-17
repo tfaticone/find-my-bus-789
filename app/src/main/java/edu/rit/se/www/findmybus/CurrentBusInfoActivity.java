@@ -43,8 +43,14 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
     private int distance = 0;
     private int heading = 0;
     Timer timer;
-    TextView routeListText;
+    TextView routeListText = null;
+    TextView etaText = null;
+    TextView routeNameText = null;
     RequestQueue requestQueue;
+    String nextStopID = null;
+    String stopDescription = null;
+    String eta = null;
+    String routeName = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,12 +76,15 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             TextView routeIDText = (TextView) findViewById(R.id.routeID);
             routeID = Integer.parseInt(bundle.getString("routeID"));
             routeIDText.setText(bundle.getString("routeID"));
-            TextView routeListText = (TextView) findViewById(R.id.routeList);
+            routeListText = (TextView) findViewById(R.id.routeList);
+            etaText = (TextView) findViewById(R.id.eta);
+            routeNameText = (TextView) findViewById(R.id.routeName);
         }
 
         requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
-        getRouteList(routeID);
-
+        getRouteList(routeID, 1);
+        getRouteList(routeID, 2);
+        getRouteList(routeID, 3);
     }
 
     protected void onStart() {
@@ -151,11 +160,19 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void getRouteList(Integer routeNumber) {
+    public void getRouteList(Integer routeNumber, final Integer urlConfig) {
         // First, we insert the username into the repo url.
         // The repo url is defined in GitHubs API docs (https://developer.github.com/v3/repos/).
-        String url = "http://api.rgrta.com/rtroutes?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
-
+        String url = null;
+        if(urlConfig == 1) {
+            url = "http://api.rgrta.com/rtroutes?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+        }
+        if(urlConfig == 2){
+            url = "http://api.rgrta.com/rtrouteStops?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+        }
+        if(urlConfig == 3){
+            url = "http://api.rgrta.com/rtpredictions?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber + "&stopid=" + nextStopID;
+         }
         // Next, we create a new JsonArrayRequest. This will use Volley to make a HTTP request
         // that expects a JSON Array Response.
         // To fully understand this, I'd recommend readng the office docs: https://developer.android.com/training/volley/index.html
@@ -163,37 +180,57 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
-                        // Check the length of our response (to see if the user has any repos)
+                        // Check the length of our response
                         if (response.length() > 0) {
-                            // The user does have repos, so let's loop through them all.
+                            // We did get a response
                             for (int i = 0; i < response.length(); i++) {
                                 try {
-                                    // For each repo, add a new line to our repo list.
-                                    JSONObject jsonObj = response.getJSONObject(i);
-                                    String routeName = jsonObj.get("RouteName").toString();
-//                                    routeListText.setText(routeNumber);
-//                                    String currentText = routeListText.getText().toString();
-//                                    routeListText.setText(currentText + "\n\n" + routeNumber);
-                                    Log.e("API", routeName);
+                                    if (urlConfig == 1){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(i);
+                                        routeName = jsonObj.get("RouteName").toString();
+                                        Log.e("API", routeName);
+                                    }
+                                    if (urlConfig == 2){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(0);
+                                        nextStopID = jsonObj.get("StopID").toString();
+                                        stopDescription = jsonObj.get("StopName").toString();
+                                        Log.e("API", nextStopID);
+                                        Log.e("API", stopDescription);
+                                    }
+                                    if (urlConfig == 3){
+                                        // For each response, add a new line to our route list.
+                                        JSONObject jsonObj = response.getJSONObject(i);
+                                        eta = jsonObj.get("ETA").toString();
+                                        Log.e("test","in eta");
+                                        Log.e("API ETA", eta);
+                                    }
                                 } catch (JSONException e) {
                                     // If there is an error then output this to the logs.
                                     Log.e("Volley", "Invalid JSON Object.");
                                 }
-
                             }
-                        } else {
-                            // The user didn't have any repos.
-                            routeListText.setText("No buses found on this route.");
-                        }
 
+
+                            String currentText = routeNameText.getText().toString();
+                            routeNameText.setText(currentText + "\n\n" + routeName);
+                            currentText = routeListText.getText().toString();
+                            routeListText.setText(currentText + "\n\n" + stopDescription);
+                            currentText = etaText.getText().toString();
+                            etaText.setText(currentText + "\n\n" + eta);
+                        } else {
+                            // There are no buses found on this route
+                            Log.e("Volley","No buses found on this route.");
+                        }
                     }
                 },
 
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // If there a HTTP error then add a note to our repo list.
-                        routeListText.setText("Unfortunately, we have encountered an error. ");
+                        // If there a HTTP error then add a note to our route list.
+                        Log.e("Volley", "Unfortunately, we have encountered an error. ");
                         Log.e("Volley", error.toString());
                     }
                 }
