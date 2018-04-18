@@ -1,16 +1,22 @@
 package edu.rit.se.www.findmybus;
 
+import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NavUtils;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -40,6 +46,7 @@ import android.os.Vibrator;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import edu.rit.se.www.findmybus.API.RouteConnection;
@@ -67,19 +74,16 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(status != TextToSpeech.ERROR) {
-                    talker.setLanguage(Locale.US);
-                    startTimedUpdates();
-                }
-            }
-        });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {
+            checkPermission();
+        }
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
 
         myVib = (Vibrator) this.getSystemService(VIBRATOR_SERVICE);
         setContentView(R.layout.activity_current_bus_info);
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
 
 //        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -93,9 +97,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         final Bundle bundle = getIntent().getExtras();
 
         if(bundle.getString("routeID")!=null) {
-            TextView routeIDText = (TextView) findViewById(R.id.routeID);
             routeID = Integer.parseInt(bundle.getString("routeID"));
-            routeIDText.setText(bundle.getString("routeID"));
             routeListText = (TextView) findViewById(R.id.routeList);
             etaText = (TextView) findViewById(R.id.eta);
             routeNameText = (TextView) findViewById(R.id.routeName);
@@ -112,47 +114,76 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        talker.stop();
+        if(timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+        if(vibTimer != null) {
+            vibTimer.cancel();
+            vibTimer = null;
+        }
+    }
+
     protected void onStart() {
         super.onStart();
-        requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
         getRouteList(routeID, 1);
         getRouteList(routeID, 2);
         getRouteList(routeID, 3);
         getRouteList(routeID, 4);
+        talker = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    talker.setLanguage(Locale.US);
+                    startTimedUpdates();
+                }
+            }
+        });
     }
 
-    protected void onPause(){
-        super.onPause();
-        timer.cancel();
-    }
+    public void checkPermission(){
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ){//Can add more as per requirement
 
-    protected void onResume(){
-        super.onResume();
-        startTimedUpdates();
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},
+                    123);
+        }
     }
 
     private void updateDisplayValues(){
         final TextView busDistanceLabel = (TextView) findViewById(R.id.busDistance);
         final TextView busHeadingLabel = (TextView) findViewById(R.id.busHeading);
         try {
+            Log.e("Display", Boolean.toString(mFusedLocationClient == null));
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                         @Override
                         public void onSuccess(Location location) {
-                            Log.e("Display", "OnSuccess");
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                Log.e("Display", "Not Null");
                                 if(savedLocation != null){
-                                    Log.e("vehicleLocation", "THERE IS A SAVEDLOCATION");
                                     distance = (float)(((double)location.distanceTo(savedLocation)) * 0.000621371);
                                     heading = location.bearingTo(savedLocation);
                                 } else {
                                     distance = (float)(((double)location.distanceTo(vehicle)) * 0.000621371);
                                     heading = location.bearingTo(vehicle);
-                                    Log.e("DISTANCE",Float.toString(distance));
                                 }
+                            } else {
+                                Log.e("DISTANCE", "TIS FUCING EMPTY");
                             }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.d("MapDemoActivity", "Error trying to get last GPS location");
+                            e.printStackTrace();
                         }
                     });
         } catch (SecurityException se) {
@@ -164,8 +195,10 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         CurrentBusInfoActivity.this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                busDistanceLabel.setText(Float.toString(distance) + " miles");
-                busHeadingLabel.setText(Float.toString(heading) + " degrees");
+                Double DisplayDistance = Math.round(distance * 100) / 100.0;
+                Double DisplayHeading = Math.round(heading * 100) / 100.0;
+                busDistanceLabel.setText(Double.toString(DisplayDistance) + " miles");
+                busHeadingLabel.setText(Double.toString(DisplayHeading) + " degrees");
                 if(0.00094697 < distance && distance < 0.0189394) { //Rougly between 5 and 100 feet ( in miles )
                     startVibrationTimer(distance, heading);
                 } else {
@@ -196,8 +229,10 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
 
     private void voiceUpdates() {
         if(!talker.isSpeaking()) {
-            talker.speak("Bus" + Integer.toString(routeID) + " is " + Float.toString(distance)
-                    + " miles away. It has a heading of " + Float.toString(heading) + " degrees.", TextToSpeech.QUEUE_FLUSH, null);
+            Double DisplayDistance = Math.round(distance * 100) / 100.0;
+            Double DisplayHeading = Math.round(heading * 100) / 100.0;
+            talker.speak("Bus" + Integer.toString(routeID) + " is " + Double.toString(DisplayDistance)
+                    + " miles away and is" + Double.toString(DisplayHeading) + " degrees to the right.", TextToSpeech.QUEUE_FLUSH, null);
         }
     }
 
@@ -276,6 +311,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
          }
         if(urlConfig == 4){
             url = "http://api.rgrta.com/rtvehicles?key=d0eac034-06b4-4c51-877a-3f21119b87e7&routeid=" + routeNumber;
+
         }
         // Next, we create a new JsonArrayRequest. This will use Volley to make a HTTP request
         // that expects a JSON Array Response.
@@ -313,16 +349,12 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                                         vehicleLocation.setLongitude(Double.parseDouble(jsonObj.get("CurrentLon").toString()));
                                         vehicleLocation.setBearing(Float.parseFloat(jsonObj.get("Heading").toString()));
                                         vehicle = vehicleLocation;
+                                        updateDisplayValues();
                                     }
                                 } catch (JSONException e) {
                                     // If there is an error then output this to the logs.
                                     Log.e("Volley", "Invalid JSON Object.");
                                 }
-                            }
-
-                            if(urlConfig == 4) {
-                                Log.e("UPDATE", "Displaying new vals");
-                                updateDisplayValues();
                             }
                             String currentText = routeNameText.getText().toString();
                             routeNameText.setText(routeName);

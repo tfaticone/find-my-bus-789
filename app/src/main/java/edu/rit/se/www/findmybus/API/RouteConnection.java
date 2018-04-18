@@ -86,8 +86,6 @@ public class RouteConnection extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.content_current_bus_info);
-
-        this.routeId = (TextView) findViewById(R.id.routeID);  // Link our route text box.
         this.routeList = (TextView) findViewById(R.id.routeList);  // Link our repository list text output box.
         this.routeList.setMovementMethod(new ScrollingMovementMethod());  // This makes our text box scrollable, for those big GitHub contributors with lots of repos :)
 
