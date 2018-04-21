@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -44,7 +45,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import android.os.Vibrator;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -70,6 +74,8 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
     private FusedLocationProviderClient mFusedLocationClient;
     private static Location savedLocation = null;
     private Vibrator myVib;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +86,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         }
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
         requestQueue = Volley.newRequestQueue(this);  // This setups up a new request queue which we will need to make HTTP requests.
 
         myVib = (Vibrator) this.getSystemService(VIBRATOR_SERVICE);
@@ -111,7 +118,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             public void onClick(View view) {
                 saveCurrentLocation();
             }
-        });
+        })  ;
     }
 
     @Override
@@ -161,6 +168,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         final TextView busHeadingLabel = (TextView) findViewById(R.id.busHeading);
         try {
             Log.e("Display", Boolean.toString(mFusedLocationClient == null));
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                         @Override
@@ -168,10 +176,10 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
                                 if(savedLocation != null){
-                                    distance = (float)(((double)location.distanceTo(savedLocation)) * 0.000621371);
+                                    distance = (float)(((double)location.distanceTo(savedLocation)) * 0.000621371); //meters to miles
                                     heading = location.bearingTo(savedLocation);
                                 } else {
-                                    distance = (float)(((double)location.distanceTo(vehicle)) * 0.000621371);
+                                    distance = (float)(((double)location.distanceTo(vehicle)) * 0.000621371); //meters to miles
                                     heading = location.bearingTo(vehicle);
                                 }
                             } else {
@@ -199,7 +207,8 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                 Double DisplayHeading = Math.round(heading * 100) / 100.0;
                 busDistanceLabel.setText(Double.toString(DisplayDistance) + " miles");
                 busHeadingLabel.setText(Double.toString(DisplayHeading) + " degrees");
-                if(0.00094697 < distance && distance < 0.0189394) { //Rougly between 5 and 100 feet ( in miles )
+                Log.e("DISTANCE", Float.toString(distance));
+                if(distance < 0.0189394) { //Under 100 feet ( in miles )
                     startVibrationTimer(distance, heading);
                 } else {
                     stopVibrationTimer();
@@ -213,13 +222,18 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
 
     private void saveCurrentLocation() {
         try {
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
             mFusedLocationClient.getLastLocation()
                     .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                         @Override
                         public void onSuccess(Location location) {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                savedLocation = location;
+                                Location loc = new Location("");
+                                loc.setBearing(location.getBearing());
+                                loc.setLongitude(location.getLongitude());
+                                loc.setLatitude(location.getLatitude());
+                                savedLocation = loc;
                             }
                         }
                     });
@@ -248,9 +262,12 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
 
         vibTimer = new Timer();
 
-        Float time = (float)((10 * (distance * 0.000189394)) + 2);
-        Float strength = (float)((-.009 * (bearing * 0.000189394)) + 1);
-        final VibrationEffect effect = VibrationEffect.createOneShot(Math.round(time), Math.round(strength * VibrationEffect.DEFAULT_AMPLITUDE));
+        Float time = (float)(((distance * 5280) * 19) + 100);
+        Float strength = (float)((-.681 * bearing) + 254);
+        strength = (strength > 255) ? 255 : strength;
+        Log.e("time", time.toString());
+        Log.e("strength", strength.toString());
+        final VibrationEffect effect = VibrationEffect.createOneShot(Math.round(time), Math.round(strength));
 
         TimerTask vibrateTask = new TimerTask() {
             @Override
@@ -261,7 +278,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
             }
         };
 
-        vibTimer.schedule(vibrateTask, 0, 2 * Math.round(time));
+        vibTimer.schedule(vibrateTask, 0, Math.round(time) * 2);
     }
 
     private void startTimedUpdates(){
@@ -348,6 +365,7 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
                                         vehicleLocation.setLatitude(Double.parseDouble(jsonObj.get("CurrentLat").toString()));
                                         vehicleLocation.setLongitude(Double.parseDouble(jsonObj.get("CurrentLon").toString()));
                                         vehicleLocation.setBearing(Float.parseFloat(jsonObj.get("Heading").toString()));
+                                        Log.e("New Location", vehicleLocation.toString());
                                         vehicle = vehicleLocation;
                                         updateDisplayValues();
                                     }
@@ -382,4 +400,5 @@ public class CurrentBusInfoActivity extends AppCompatActivity {
         // The request queue will automatically handle the request as soon as it can.
         requestQueue.add(arrReq);
     }
+
 }
